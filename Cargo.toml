@@ -1,0 +1,13 @@
+[package]
+name = "ZecroVizR"
+description = "A Rust based Hypervisor"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+license-file = "LICENSE"
+
+[dependencies]
+kvm-ioctls   = "0.16"
+kvm-bindings = "0.8"
+vm-memory    = "0.14"
+libc         = "0.2"
