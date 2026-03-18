@@ -6,7 +6,7 @@ version = 4
 name = "ZecroVizR"
 version = "0.1.0"
 dependencies = [
- "kvm-bindings 0.8.2",
+ "kvm-bindings",
  "kvm-ioctls",
  "libc",
  "vm-memory",
@@ -34,19 +34,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "kvm-bindings"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ac3147c9763fd8fa7865a90d6aee87f157b59167145b38e671bbc66b116f1e8"
-
-[[package]]
 name = "kvm-ioctls"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9002dff009755414f22b962ec6ae6980b07d6d8b06e5297b1062019d72bd6a8c"
 dependencies = [
  "bitflags 2.11.0",
- "kvm-bindings 0.7.0",
+ "kvm-bindings",
  "libc",
  "vmm-sys-util",
 ]

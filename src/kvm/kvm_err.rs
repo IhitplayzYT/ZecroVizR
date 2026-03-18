@@ -8,10 +8,18 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY.
  */
+
+#[allow(non_camel_case_types,non_snake_case)]
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum e_KVM {
     UnableToOpen(String),
     Custom(String),
+    MemoryInsufficient(String),
+    CorruptedVCPU(String),
+    InvalidMaximum(String),
+    InvalidMinimum(String),
+
 }
 
 impl std::fmt::Display for e_KVM {
@@ -19,6 +27,10 @@ impl std::fmt::Display for e_KVM {
         match self {
             e_KVM::UnableToOpen(x) => write!(f, "[KVM ERROR: UnableToOpenFile]\n{}", x),
             e_KVM::Custom(x) => write!(f, "[KVM ERROR: Custom Message]\n{}", x),
+            e_KVM::MemoryInsufficient(x) => write!(f, "[KVM ERROR: Insufficient Memory]\n{}",x),
+            e_KVM::CorruptedVCPU(x) => write!(f, "[KVM ERROR: Corrupted/Inconsistent vCPU]\n{}",x),
+            e_KVM::InvalidMaximum(x) => write!(f, "[KVM ERROR: Invalid Count [Exceeds Maximum]]\n{}",x),
+            e_KVM::InvalidMinimum(x) => write!(f, "[KVM ERROR: Invalid Count [Less than Minimum]]\n{}",x),
         }
     }
 }
