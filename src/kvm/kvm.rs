@@ -10,10 +10,10 @@
  */
 
 pub mod kvm {
-    #![allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals)]
+    #![allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
     // ****************************************  IMPORTS  ****************************************
     use crate::kvm::arch::{self, arch::asm_test_code};
-    use crate::kvm::vcpu::vcpu::{Vcpu_wrapper, vcpu_setup};
+    use crate::kvm::vcpu::vcpu::{ExecMode, Vcpu_wrapper, e_VCPU, r_VCPU, vcpu_setup};
 
     use kvm_bindings::{KVM_MAX_CPUID_ENTRIES, KVM_MEM_LOG_DIRTY_PAGES, kvm_pit_config, kvm_regs, kvm_userspace_memory_region};
     use kvm_ioctls::{Cap, DeviceFd, Kvm, VcpuFd, VmFd};
@@ -21,12 +21,14 @@ pub mod kvm {
 
     use crate::kvm::kvm_err::*;
     use crate::utils::utils::DBG_STR;
+    use crate::io::IO::{r_IO,e_IO};
     use crate::*;
-    use core::panic;
+    use core::{panic, sync};
     use std::alloc::alloc;
+    use std::sync::{Arc, Barrier, Mutex, RwLock};
+    use std::thread;
     use std::io::Write;
     use std::slice;
-    use std::sync::Arc;
     use std::{fmt::write, process::exit, ptr::null_mut};
     // ****************************************  IMPORTS  ****************************************
 
@@ -52,26 +54,164 @@ pub mod kvm {
     // ****************************************  DATA STRUCTURES  ****************************************
 
     // An empty struct that acts as a common interface for multi threaded and smp systems
-    pub struct DeviceBus;
+    pub struct DeviceBus{
+        mode: ExecMode, // To be used by the methods of the Device Bus
+        device: RwLock<Vec<Arc<dyn Device+Send+Sync>>>, // ReadWrite locked vector of devices interface behind a concurrent smart pointer
+        barrier:Option<Arc<Barrier>>, // Used for smp to ensure every worker is at same point
+        collapse: Mutex<bool>, // To shutdown all threads as a fail safe
+    }
+
+    impl DeviceBus{
+
+        pub fn new(mode:ExecMode,vcpu_cnt: usize) -> Self{
+            let barrier;
+            if let ExecMode::Smp = mode{
+                barrier = Some(Arc::new(Barrier::new(vcpu_cnt)));
+            }else{
+                barrier = None
+            }
+            Self { mode: mode, device: RwLock::new(Vec::new()), barrier, collapse: Mutex::new(false) }
+        }
+
+        pub fn register_dev<T: Device+Send+Sync+'static>(&self,device:T) -> r_IO<bool>{
+            self.device.try_write().map_err(|op| {
+                e_IO::FailedToRegisterDevice(
+                    DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op))
+                )
+            })
+            ?.push(Arc::new(device));
+            Ok(true)
+        }
+        pub fn unregister_dev<T: Device+Send+Sync>(&self,device:T) -> r_IO<bool> {
+            let idx  = self.device.try_read().map_err(|op| {
+                e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
+            })?.iter().position(|op| {
+                let op_ptr = &**op as *const dyn Device as *const ();
+                let dev_ptr = &device as *const T as *const ();
+                op_ptr == dev_ptr
+            });
+            
+            if let Some(x) = idx{
+            self.device.try_write().map_err(|op| {
+                e_IO::FailedToUnregisterDevice(DBG_STR(&format!("Comprimise: Poisoned RWLock during Unregistering!\nReason: [{:?}]\n",op)))
+            })?.remove(x);
+            }
+            Ok(true)
+        }
+
+        pub fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool>{
+            self.device.try_read().map_err(|op| {
+                e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
+            })?.iter().for_each(|dev| {
+                if let Some((l,r)) = dev.pio_range(){
+                    if port > l && port< r{ 
+                        dev.pio_read(port, data).unwrap();
+                        return;
+                    }
+                }
+            });
+            Ok(true)
+        }
+
+        pub fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool>{
+            self.device.try_read().map_err(|op| {
+                e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
+            })?.iter().for_each(|dev| {
+                if let Some((l,r)) = dev.pio_range(){
+                    if port > l && port < r{
+                        dev.pio_write(port, data).unwrap();
+                        return;
+                    }
+                }
+            });
+            Ok(true)
+        }
+
+        pub fn mmio_read(&self,addr:u64,data: &mut [u8]) -> r_IO<bool>{
+            self.device.try_read().map_err(|op| {
+                e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
+            })?.iter().for_each(|dev| {
+                if let Some((l,r)) = dev.mmio_range(){
+                    if addr > l  && addr < r{
+                        dev.mmio_read(addr, data).unwrap();
+                        return;
+                    }
+                }
+            });
+            Ok(true)
+        }
+
+        pub fn mmio_write(&self,addr:u64,data: &[u8]) -> r_IO<bool>{
+            self.device.try_read().map_err(|op| {
+                e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
+            })?.iter().for_each(|dev| {
+                if let Some((l,r)) = dev.mmio_range(){
+                    if addr > l && addr < r {
+                        dev.mmio_write(addr, data).unwrap();
+                        return;
+                    }
+                }
+            });
+            Ok(true)
+        }
+
+
+        pub fn smp_init(&self) {
+            if let Some(barrier) = &self.barrier {
+                barrier.wait();
+            }
+        }
+
+        pub fn try_shutdown(&self) -> r_IO<bool>{
+            self.collapse.try_lock().map_err(|op| {
+                e_IO::ShutdownNotReady(
+                    DBG_STR(&format!("Can't get shutdown lock!\nReason: [{:?}]\n",op))
+                )
+            }).unwrap_err();
+            Ok(true)
+        }
+
+
+    }
 
 
 
+
+    pub trait Device: Send + Sync{
+        fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool>;
+        fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool>;
+        fn mmio_read(&self,addr:u64,data: &mut [u8]) -> r_IO<bool>;
+        fn mmio_write(&self,addr:u64,data: &[u8]) -> r_IO<bool>;
+        fn pio_range(&self) -> Option<(u16,u16)> ;
+        fn mmio_range(&self) -> Option<(u64,u64)> ;
+    }
 
     pub struct Vmm{
         kvm: Kvm,
         vm_fd: VmFd,
-        device:Arc<DeviceFd>
+        guest_mem:*mut u8,
+        exec_mode:ExecMode,
+        device:Arc<DeviceBus>,
+        vcpu_cnt: u64,
     }
 
+    unsafe impl Send for Vmm{}
+    unsafe impl Sync for Vmm{}
 
     // ****************************************  DATA STRUCTURES  ****************************************
 
 
     // ****************************************  MAIN API  ****************************************
 
-    pub fn INIT_KVM(setup:vcpu_setup,DEBUG_FLAG: bool) -> r_KVM<bool> {
-        let state = eval_vcpu_config(setup);
-
+    pub fn INIT_KVM(setup:vcpu_setup) -> r_KVM<bool> {
+        let setup = validate_vcpu_config(setup).map_err(|op| {
+            e_KVM::Custom(format!("{:?}",e_VCPU::InvalidVcpuSetup(DBG_STR(&format!(
+                "Invalid vCPU config recieved\nReason: [ {:?} ]\n",
+                op
+            )))))
+        })?;
+        
+        let mode = exec_mode_eval(setup); // An enum for if let matching 
 
         let Vkvm = open_dev_kvm()?; // Validated KVM and /dev/kvm created 
 
@@ -83,25 +223,40 @@ pub mod kvm {
         })?; // Initilaised the VM
 
 
-
-
-
-
         let guest_memory = init_guest_mem()?;
         let user_space = init_userspace(guest_memory)?;
 
-        unsafe { Vm_fd.set_user_memory_region(user_space).unwrap() };
+        unsafe { Vm_fd.set_user_memory_region(user_space).map_err(|e| {
+                e_KVM::MemoryInsufficient(DBG_STR(&format!(
+                    "KVM_SET_USER_MEMORY_REGION failed\nReason: [ {:?} ]", e
+                )))
+            })?;
+        }
 
         //  OPTIONAL TEST PART 
-        // TODO:
-        // FIXME: Check if it is worth adding the in kvm page fault tester
-
-        if DEBUG_FLAG {
+        if setup.dbg {
             test_code(guest_memory as *mut u8);
         }
         //  OPTIONAL TEST PART
 
         let vcpu_id = 0_usize;
+
+        Vm_fd.create_irq_chip().map_err(|op| {
+            e_KVM::Custom(DBG_STR(&format!(
+                "Unable to set In-kernel interrupt controller:\nReason: [ {:?} ]\n",
+                op
+            )))
+        })?; // Setup in kernel interrupts for smp systems
+
+        let pit = kvm_pit_config{flags:0,..Default::default()};
+        Vm_fd.create_pit2(pit).map_err(|op| {
+            e_KVM::Custom(DBG_STR(&format!(
+                "Unable to set In-kernel timed interrupts:\nReason: [ {:?} ]\n",
+                op
+            )))
+        })?; // Setup to maintain in kernel timed interrupts
+
+
         let v_cpu0_fd = create_vcpu(Vm_fd, if vcpu_id < Vkvm.get_max_vcpu_id() { vcpu_id as u64 }else {
         panic!("KVM INIT FAILED!![NO VCPUS POSSIBLE]")
         })?; // Making the first Vcpu
@@ -114,7 +269,7 @@ pub mod kvm {
             )))
         })?;
 
-        if !init_registers(&v_cpu0_fd)?{
+        if !init_registers(&v_cpu0_fd,vcpu_id == 0)?{
             panic!("Register init failed!!");
         }
 
@@ -131,6 +286,23 @@ pub mod kvm {
 
     // ****************************************  INNER FUNCTIONS  ****************************************
 
+    fn validate_vcpu_config(setup:vcpu_setup) -> r_VCPU<vcpu_setup>{
+        let max_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1) as u64;
+        if (setup.smp && (setup.cnt > 1 && setup.cnt < max_threads)) && (!setup.smp && (setup.cnt > 0 && setup.cnt < max_threads)){
+            Ok(setup)
+        }else{ 
+            Err(e_VCPU::InvalidVcpuSetup(DBG_STR("Invaild vCPU config")))
+        }
+    }
+
+    fn exec_mode_eval(setup:vcpu_setup) -> ExecMode{
+        match (setup.cnt,setup.smp) {
+             (1,_) => ExecMode::SingleThreaded,
+             (_,false) => ExecMode::MultiThreaded,
+             (_,true) => ExecMode::Smp
+        }
+    }
+
     fn open_dev_kvm() -> r_KVM<Kvm> {
         let kvm = Kvm::new().unwrap_or_else(|e| {
             eprintln!("{}", DBG_STR(&format!("{:?}", e)[..]));
@@ -139,6 +311,7 @@ pub mod kvm {
         assert_eq!(kvm.get_api_version(), 12);
         assert!(kvm.check_extension(Cap::UserMemory));
         assert!(kvm.check_extension(Cap::ImmediateExit));
+        assert!(kvm.check_extension(Cap::Irqchip));
         Ok(kvm)
     }
 
@@ -152,7 +325,7 @@ pub mod kvm {
 
         for i in allocated_cpuid.as_mut_slice(){
             if i.function == 1{
-                i.ebx = (vcpuid << 24) as u32;
+                i.ebx = (i.ebx & 0x00ffffff) | ((vcpuid << 24) as u32);
             }
             // THis is to preven userspace access to the initrd code 
             if i.function == 0x80000001{
@@ -161,19 +334,19 @@ pub mod kvm {
 
         }
         vcpu.set_cpuid2(&allocated_cpuid).map_err(|op| {
-            e_KVM::CorruptedVCPU(DBG_STR(&format!(
-                "Unbale to write alloced CPUid to vcpu:\nVcpu_id: {}\nReason: [ {:?} ]\n",
+            e_KVM::Custom(format!("{:?}",e_VCPU::CorruptedVCPU(DBG_STR(&format!(
+                "Unable to write alloced CPUid to vcpu:\nVcpu_id: {}\nReason: [ {:?} ]\n",
                 vcpuid, op
-            )))
+            )))))
         })?;
 
         Ok(true)
     }
 
 
-    fn init_registers(vcpu:&VcpuFd) -> r_KVM<bool> {
+    fn init_registers(vcpu:&VcpuFd,bsp: bool) -> r_KVM<bool> {
         let mut spec_regs = vcpu.get_sregs().map_err(|op| {
-           e_KVM::CorruptedVCPU(DBG_STR(&format!("Unable to retrieve vCpu Spec_Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))
+           e_KVM::Custom(format!("{:?}",e_VCPU::CorruptedVCPU(DBG_STR(&format!("Unable to retrieve vCpu Spec_Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))))
         })?;
         // This is VIMP Spec_reg it controls the vCPU operation and architectural intricises
         spec_regs.cr0 = /* Paging */ (1 << 31) | /* Alignment */ (1 << 18) | /* Write protected CPU */ (1 << 16) | /* Use FPU for numeric errors */ (1 << 5) | /* Modern cpu req */ (1 << 4) | /* Monitor Copressing */ (1 << 1) | /* Switch Real -> Proctected mode*/ 1;
@@ -191,20 +364,20 @@ pub mod kvm {
         spec_regs.cs.s = 1; // To mark segemnt as code segment   
         spec_regs.cs.type_ = 11;
         vcpu.set_sregs(&spec_regs).map_err(|op| {
-           e_KVM::CorruptedVCPU(DBG_STR(&format!("Unable to update the vCpu Spec_Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))
+           e_KVM::Custom(format!("{:?}",e_VCPU::CorruptedVCPU(DBG_STR(&format!("Unable to update the vCpu Spec_Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))))
         })?;
 
         let regs = kvm_regs{
-        rip: KERNEL_LOAD_ADDR,
-        rsp: BOOT_STACK_ADDR,
+        rip: if bsp {KERNEL_LOAD_ADDR} else {0},
+        rsp: if bsp {BOOT_STACK_ADDR} else {0},
+        rsi: if bsp {BOOT_PARAMS_ADDR} else {0},
         rflags: 0x0002,   // Set for x86
         rbp: 0,
-        rsi: BOOT_PARAMS_ADDR,
         ..Default::default()
         };
 
         vcpu.set_regs(&regs).map_err(|op| {
-           e_KVM::CorruptedVCPU(DBG_STR(&format!("Unable to update the vCpu Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))
+           e_KVM::Custom(format!("{:?}",e_VCPU::CorruptedVCPU(DBG_STR(&format!("Unable to update the vCpu Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))))
         })?;       
         Ok(true)
     }
@@ -216,22 +389,6 @@ pub mod kvm {
                 0, op
             )))
         })?;
-
-        Vm_fd.create_irq_chip().map_err(|op| {
-            e_KVM::Custom(DBG_STR(&format!(
-                "Unable to set In-kernel interrupt controller:\nReason: [ {:?} ]\n",
-                op
-            )))
-        })?; // Setup in kernel interrupts for smp systems
-
-        let pit = kvm_pit_config{flags:0,..Default::default()};
-        Vm_fd.create_pit2(pit).map_err(|op| {
-            e_KVM::Custom(DBG_STR(&format!(
-                "Unable to set In-kernel timed interrupts:\nReason: [ {:?} ]\n",
-                op
-            )))
-        })?; // Setup to maintian in kernel timed interrupts
-
         
         Ok(v_cpu0_fd)
     }
@@ -242,6 +399,9 @@ pub mod kvm {
             slice_view.write(asm_test_code).unwrap();
         };
     }
+
+
+
 
     fn init_guest_mem() -> r_KVM<*mut u8> {
         let ret: *mut u8 = unsafe {
