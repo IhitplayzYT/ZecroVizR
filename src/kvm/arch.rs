@@ -12,7 +12,7 @@
 // File for architecture dependent code
 pub mod arch {
 
-    #[allow(non_snake_case, non_camel_case_types, dead_code,non_upper_case_globals)]
+#[allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
     ///
     ///   x86 based systems test code
     ///

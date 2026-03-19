@@ -9,11 +9,13 @@
  * but WITHOUT ANY WARRANTY.
  */
 
+
 pub mod kvm {
+
     #![allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
     // ****************************************  IMPORTS  ****************************************
     use crate::kvm::arch::{self, arch::asm_test_code};
-    use crate::kvm::vcpu::vcpu::{ExecMode, Vcpu_wrapper, e_VCPU, r_VCPU, vcpu_setup};
+    use crate::kvm::vcpu::vcpu::{ExecMode, Vcpu_wrapper, e_VCPU, r_VCPU, vcpu_setup,spawn_vcpu_threads};
 
     use kvm_bindings::{KVM_MAX_CPUID_ENTRIES, KVM_MEM_LOG_DIRTY_PAGES, kvm_pit_config, kvm_regs, kvm_userspace_memory_region};
     use kvm_ioctls::{Cap, DeviceFd, Kvm, VcpuFd, VmFd};
@@ -63,14 +65,14 @@ pub mod kvm {
 
     impl DeviceBus{
 
-        pub fn new(mode:ExecMode,vcpu_cnt: usize) -> Self{
+        pub fn new(mode:ExecMode,vcpu_cnt: usize) -> Arc<Self>{
             let barrier;
             if let ExecMode::Smp = mode{
                 barrier = Some(Arc::new(Barrier::new(vcpu_cnt)));
             }else{
                 barrier = None
             }
-            Self { mode: mode, device: RwLock::new(Vec::new()), barrier, collapse: Mutex::new(false) }
+            Arc::new(Self { mode: mode, device: RwLock::new(Vec::new()), barrier, collapse: Mutex::new(false) })
         }
 
         pub fn register_dev<T: Device+Send+Sync+'static>(&self,device:T) -> r_IO<bool>{
@@ -174,9 +176,6 @@ pub mod kvm {
 
     }
 
-
-
-
     pub trait Device: Send + Sync{
         fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool>;
         fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool>;
@@ -239,7 +238,6 @@ pub mod kvm {
         }
         //  OPTIONAL TEST PART
 
-        let vcpu_id = 0_usize;
 
         Vm_fd.create_irq_chip().map_err(|op| {
             e_KVM::Custom(DBG_STR(&format!(
@@ -256,28 +254,43 @@ pub mod kvm {
             )))
         })?; // Setup to maintain in kernel timed interrupts
 
-
-        let v_cpu0_fd = create_vcpu(Vm_fd, if vcpu_id < Vkvm.get_max_vcpu_id() { vcpu_id as u64 }else {
-        panic!("KVM INIT FAILED!![NO VCPUS POSSIBLE]")
-        })?; // Making the first Vcpu
-
-
-        let kvm_runtime_size = Vkvm.get_vcpu_mmap_size().map_err(|op| {
-            e_KVM::MemoryInsufficient(DBG_STR(&format!(
-                "Insufficient Memory for kvm_run:\nGot=>( {:?} ) Expected=>({:?})\nReason: [ {:?} ]\n",
-                mem_size,Vkvm.get_vcpu_mmap_size(), op
-            )))
-        })?;
-
-        if !init_registers(&v_cpu0_fd,vcpu_id == 0)?{
-            panic!("Register init failed!!");
+        let mx_vcpu_ids = Vkvm.get_max_vcpu_id() as u64;
+        if setup.cnt > mx_vcpu_ids {
+            return Err(e_KVM::OverflowsCapacity(
+                DBG_STR("The number of vcpus provided exceeds the KVM's max vcpu_id capacity")
+            ));
         }
 
-        if !bind_cpu_id(&v_cpu0_fd,vcpu_id as u64,Vkvm)? {
-            panic!("Cpuid Bind FAILED for vcpu: {:?}\nvcpu_id:{}\n",v_cpu0_fd,vcpu_id);
+        let mut vCPUs: Vec<VcpuFd> = Vec::new();
+        for id in 0..setup.cnt {
+            let fd = Vm_fd.create_vcpu(id).map_err(|op| {
+                e_KVM::OverflowsCapacity(DBG_STR(&format!(
+                    "Unable to create any more vcpus:\nReason: [ {:?} ]\n",
+                    op
+                )))
+            })?;
+            if let Ok(true) = init_registers(&fd, id == 0){
+            }else{
+                panic!("A vcpu wasn't able to be started")
+            }
+            if let Ok(true) = bind_cpu_id(&fd, id, &Vkvm){
+            }else{
+                panic!("A vcpu wasn't binded to its cpu_id")
+                
+            }
+            vCPUs.push(fd);
         }
 
+        let Dbus = DeviceBus::new(mode, setup.cnt as usize);
 
+        let handles = spawn_vcpu_threads(vCPUs,Dbus,mode);
+
+        for (id,h) in handles.into_iter().enumerate() {
+            if let Err(e) = h.join() {
+                return Err(e_KVM::Custom(DBG_STR(&format!("A thread panicked for the vCPU with Id:{}",id))));
+            }
+
+        }
 
         Ok(true)
     }
@@ -315,7 +328,7 @@ pub mod kvm {
         Ok(kvm)
     }
 
-    fn bind_cpu_id(vcpu:& VcpuFd,vcpuid:u64,kvm:Kvm) -> r_KVM<bool> {
+    fn bind_cpu_id(vcpu:&VcpuFd,vcpuid:u64,kvm:&Kvm) -> r_KVM<bool> {
         let mut allocated_cpuid = kvm.get_supported_cpuid(KVM_MAX_CPUID_ENTRIES).map_err(|op| {
             e_KVM::InvalidMaximum(DBG_STR(&format!(
                 "Larger argument passed then expected:\nMax=>({:?})\nReason: [ {:?} ]\n",

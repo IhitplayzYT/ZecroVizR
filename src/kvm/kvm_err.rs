@@ -9,8 +9,8 @@
  * but WITHOUT ANY WARRANTY.
  */
 
-#[allow(non_camel_case_types,non_snake_case,dead_code)]
 
+#[allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum e_KVM {
@@ -19,7 +19,7 @@ pub enum e_KVM {
     MemoryInsufficient(String),
     InvalidMaximum(String),
     InvalidMinimum(String),
-
+    OverflowsCapacity(String),
 }
 
 impl std::fmt::Display for e_KVM {
@@ -30,7 +30,7 @@ impl std::fmt::Display for e_KVM {
             e_KVM::MemoryInsufficient(x) => write!(f, "[KVM ERROR: Insufficient Memory]\n{}",x),
             e_KVM::InvalidMaximum(x) => write!(f, "[KVM ERROR: Invalid Count [Exceeds Maximum]]\n{}",x),
             e_KVM::InvalidMinimum(x) => write!(f, "[KVM ERROR: Invalid Count [Less than Minimum]]\n{}",x),
-
+            e_KVM::OverflowsCapacity(x) => write!(f, "[KVM ERROR: Violates the KVM's Constraints]\n{}",x),
         }
     }
 }

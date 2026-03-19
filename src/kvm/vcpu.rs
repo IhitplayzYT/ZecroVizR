@@ -9,9 +9,11 @@
  * but WITHOUT ANY WARRANTY.
  */
 pub mod vcpu{
-#[allow(non_camel_case_types,non_upper_case_globals,non_snake_case,dead_code)]
+#![allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
     use kvm_ioctls::VcpuFd;
-    use std::fmt::Display;
+    use std::{fmt::Display, sync::Arc, thread::{self, JoinHandle}};
+
+    use crate::kvm::kvm::kvm::DeviceBus;
 
 
 #[derive(Debug)]
@@ -34,14 +36,12 @@ CorruptedVCPU(String),
 Custom(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone, Copy)]
 pub enum ExecMode{
     SingleThreaded,
     MultiThreaded,
     Smp,
 }
-
-
 
 
 impl Display for e_VCPU {
@@ -72,7 +72,31 @@ impl vcpu_setup {
 }
 
 
+pub fn spawn_vcpu_threads(vcpus: Vec<VcpuFd>,Dbus: Arc<DeviceBus>,mode:ExecMode) -> Vec<JoinHandle<()>>{
 
+    match mode {
+        ExecMode::SingleThreaded => {
+            assert_eq!(vcpus.len(),1);
+            let fd = vcpus.into_iter().next().unwrap();
+            exec_vcpu(fd,0,Arc::clone(&Dbus));
+            vec![]
+        },
+        ExecMode::MultiThreaded | ExecMode::Smp => {
+            vcpus.into_iter().enumerate().map(|(id, fd)| {
+                let c_bus = Arc::clone(&Dbus);
+                thread::Builder::new()
+                .name(format!("vcpu-{id}"))
+                .spawn(move || exec_vcpu(fd,id as u64,Arc::clone(&c_bus)))
+                .expect(&format!("A vcpu-{} failed to become a thread",id))
+        }).collect()
+        },
+    }
+}
+
+pub fn exec_vcpu(vcpu: VcpuFd,id:u64,dbus:Arc<DeviceBus>) {
+// TODO: Finish this fxn 
+// FIXME:
+}
 
 
 

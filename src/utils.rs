@@ -9,8 +9,8 @@
  * but WITHOUT ANY WARRANTY.
  */
 pub mod utils {
+#[allow(non_camel_case_types,non_upper_case_globals,non_snake_case)]
     use core::panic;
-    use std::sync::Arc;
     #[allow(non_camel_case_types,non_snake_case,non_upper_case_globals)]
 
     #[allow(non_snake_case, non_camel_case_types)]
