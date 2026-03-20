@@ -35,8 +35,9 @@ pub mod kvm {
     // ****************************************  IMPORTS  ****************************************
 
     // ****************************************  GLOBAL CONSTANTS  ****************************************
-    const mem_size: u64 = 512 * 1024 * 1024; // 512 MB of guest memory 
-    const guest_addr: u64 = 0x0000; // THe starting point of the guest memory space
+    pub const mem_size: u64 = 512 * 1024 * 1024; // 512 MB of guest memory 
+
+    pub const guest_addr: u64 = 0x0000; // THe starting point of the guest memory space
 
     pub const KERNEL_LOAD_ADDR: u64 = 0x00100000;  // 1MB,place wherebzImage protected-mode kernel is loaded.
 
@@ -55,16 +56,48 @@ pub mod kvm {
 
     // ****************************************  DATA STRUCTURES  ****************************************
 
-    // An empty struct that acts as a common interface for multi threaded and smp systems
+    /// DeviceBus Struct
+    /// 
+    /// A universal interface used by the vcpus in single,multi and smp context to access the shared IO DBUS in a synchronous method 
+    /// 
+    /// # Members:
+    /// -- mode: ExecMode -> To decide the mode of execution of the ZecroVizR can be SingleThreaded,MultiThreaded, and SMP.
+    /// -- device: RwLock<Vec<Arc<dyn Device+Send+Sync>>> -> A RWLock enforced vector fo ref counted interfaces corresponding to the devie BUS 
+    /// -- barrier:Option<Arc<Barrier>>, // Used for smp to ensure a common waitpoint
+    /// -- collapse: Mutex<bool>, // Mutex to shutdown all threads
+    /// 
+    /// # Warn
+    ///    ** Avoid instantiation directly or this may cause data inconsistency in the DBUS, leading to memory corruption and permanent software damage ** 
+    /// 
+    /// # Usage
+    /// ```
+    ///    let dbus = DeviceBus::new(ExecMode::Smp,2_u8);
+    /// 
+    /// ``` 
+    /// 
     pub struct DeviceBus{
         mode: ExecMode, // To be used by the methods of the Device Bus
         device: RwLock<Vec<Arc<dyn Device+Send+Sync>>>, // ReadWrite locked vector of devices interface behind a concurrent smart pointer
         barrier:Option<Arc<Barrier>>, // Used for smp to ensure every worker is at same point
         collapse: Mutex<bool>, // To shutdown all threads as a fail safe
-    }
+    }    
 
     impl DeviceBus{
-
+        /// DeviceBus Functions
+        ///
+        /// To create/instantiate a new DBUS 
+        /// # Argument
+        ///    -- mode : ExecMode -> An enum used internally by memmber functions to ensure consistent vDBUS access
+        ///    -- vcpu_cnt : usize -> The count of vcpu's that need to be spawned
+        /// # Return
+        ///    -- Arc<DeviceBus> -> A threadsafe ref counted DBUS 
+        /// # Usage
+        /// ```
+        ///    let dbus = DeviceBus::new(ExecMode::Smp,2_u8);
+        /// 
+        /// ``` 
+        ///
+        
         pub fn new(mode:ExecMode,vcpu_cnt: usize) -> Arc<Self>{
             let barrier;
             if let ExecMode::Smp = mode{
@@ -75,6 +108,25 @@ pub mod kvm {
             Arc::new(Self { mode: mode, device: RwLock::new(Vec::new()), barrier, collapse: Mutex::new(false) })
         }
 
+        /// DeviceBus Functions
+        ///
+        /// To register a new device to the DBUS
+        /// 
+        /// # Argument
+        ///     -- device: dyn Device+Send+Sync -> An interface that implements both Sync and Send
+        /// # Return
+        ///    -- r_IO<bool> : A IO result returned
+        ///        ## Success : 
+        ///            Ok(true)
+        ///        ## Failure : e_IO -> 
+        ///             A wrapper enum containing the error
+        /// # Usage
+        /// ```
+        /// dbus.register_dev(obj)?; // obj implemenets the Trait Device
+        /// 
+        /// ``` 
+        ///
+
         pub fn register_dev<T: Device+Send+Sync+'static>(&self,device:T) -> r_IO<bool>{
             self.device.try_write().map_err(|op| {
                 e_IO::FailedToRegisterDevice(
@@ -84,6 +136,27 @@ pub mod kvm {
             ?.push(Arc::new(device));
             Ok(true)
         }
+
+        /// DeviceBus Functions
+        ///
+        /// To unregister a new device to the DBUS
+        /// 
+        /// # Argument
+        ///     -- device: dyn Device+Send+Sync -> An interface that implements both Sync and Send
+        /// # Return
+        ///    -- r_IO<bool> : A IO result returned
+        ///        ## Success : 
+        ///            Ok(true)
+        ///        ## Failure :
+        ///            e_IO -> A wrapper enum containing the error
+        ///        
+        /// # Usage
+        /// ```
+        /// dbus.unregister_dev(obj)?; // obj implemenets the Trait Device
+        /// 
+        /// ``` 
+        ///
+
         pub fn unregister_dev<T: Device+Send+Sync>(&self,device:T) -> r_IO<bool> {
             let idx  = self.device.try_read().map_err(|op| {
                 e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
@@ -100,6 +173,7 @@ pub mod kvm {
             }
             Ok(true)
         }
+
 
         pub fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool>{
             self.device.try_read().map_err(|op| {
