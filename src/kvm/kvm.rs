@@ -174,6 +174,26 @@ pub mod kvm {
             Ok(true)
         }
 
+        /// DeviceBus Functions
+        ///
+        /// Tries a programmed io read
+        /// 
+        /// # Argument
+        ///     -- port : u16 ->  A 16 bit port which is connnected to the device 
+        ///     -- data : &mut [u8] -> A mutable byte buffer for the data stream
+        /// # Return
+        ///    -- r_IO<bool> : A IO result returned
+        ///        ## Success : 
+        ///            Ok(true)
+        ///        ## Failure :
+        ///            e_IO -> A wrapper enum containing the error
+        ///        
+        /// # Usage
+        /// ```
+        /// dbus.pio_read(8080,&mut buff as &mut u8)?; 
+        /// 
+        /// ``` 
+        ///
 
         pub fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool>{
             self.device.try_read().map_err(|op| {
@@ -189,6 +209,27 @@ pub mod kvm {
             Ok(true)
         }
 
+        /// DeviceBus Functions
+        ///
+        /// Tries a programmed io write
+        /// 
+        /// # Argument
+        ///     -- port : u16 ->  A 16 bit port which is connnected to the device 
+        ///     -- data : & [u8] -> A byte buffer that will be written to the io stream
+        /// # Return
+        ///    -- r_IO<bool> : A IO result returned
+        ///        ## Success : 
+        ///            Ok(true)
+        ///        ## Failure :
+        ///            e_IO -> A wrapper enum containing the error
+        ///        
+        /// # Usage
+        /// ```
+        /// dbus.pio_write(8080,&buff as &u8)?; 
+        /// 
+        /// ``` 
+        ///
+
         pub fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool>{
             self.device.try_read().map_err(|op| {
                 e_IO::UnableToGetDBUS(DBG_STR(&format!("Comprimise: Poisoned RWLock!\nReason: [{:?}]\n",op)))
@@ -202,6 +243,27 @@ pub mod kvm {
             });
             Ok(true)
         }
+
+        /// DeviceBus Functions
+        ///
+        /// Tries a memory mapped io read
+        /// 
+        /// # Argument
+        ///     -- addr : u64 ->  A 64 bit add
+        ///     -- data : &mut [u8] -> A byte buffer that will be read into from the io stream
+        /// # Return
+        ///    -- r_IO<bool> : A IO result returned
+        ///        ## Success : 
+        ///            Ok(true)
+        ///        ## Failure :
+        ///            e_IO -> A wrapper enum containing the error
+        ///        
+        /// # Usage
+        /// ```
+        /// dbus.mmio_read(0x00018e34,&mut buff as &mut u8)?; 
+        /// 
+        /// ``` 
+        ///
 
         pub fn mmio_read(&self,addr:u64,data: &mut [u8]) -> r_IO<bool>{
             self.device.try_read().map_err(|op| {
