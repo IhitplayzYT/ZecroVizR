@@ -2,15 +2,88 @@ warning: only one of `license` or `license-file` is necessary
 `license` should be used if the package license can be expressed with a standard SPDX expression.
 `license-file` should be used if the package uses a non-standard license.
 See https://doc.rust-lang.org/cargo/reference/manifest.html#the-license-and-license-file-fields for more information.
-   0.013318772s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: stale: changed "/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/kvm/kvm.rs"
-   0.013337388s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:           (vs) "/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/.fingerprint/ZecroVizR-c06895703089ee79/dep-bin-ZecroVizR"
-   0.013339938s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1774240826, nanos: 575200433 } < FileTime { seconds: 1774240943, nanos: 441659887 }
-   0.013376947s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: fingerprint dirty for ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR)/Check { test: false }/TargetInner { name: "ZecroVizR", doc: true, ..: with_path("/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/main.rs", Edition2021) }
-   0.013389529s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/.fingerprint/ZecroVizR-c06895703089ee79/dep-bin-ZecroVizR", reference_mtime: FileTime { seconds: 1774240826, nanos: 575200433 }, stale: "/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/kvm/kvm.rs", stale_mtime: FileTime { seconds: 1774240943, nanos: 441659887 } }))
-   0.014031140s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: stale: changed "/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/kvm/kvm.rs"
-   0.014039476s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:           (vs) "/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/.fingerprint/ZecroVizR-5664208947288c80/dep-test-bin-ZecroVizR"
-   0.014041379s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1774240826, nanos: 575200433 } < FileTime { seconds: 1774240943, nanos: 441659887 }
-   0.014060860s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: fingerprint dirty for ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR)/Check { test: true }/TargetInner { name: "ZecroVizR", doc: true, ..: with_path("/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/main.rs", Edition2021) }
-   0.014066251s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/.fingerprint/ZecroVizR-5664208947288c80/dep-test-bin-ZecroVizR", reference_mtime: FileTime { seconds: 1774240826, nanos: 575200433 }, stale: "/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/kvm/kvm.rs", stale_mtime: FileTime { seconds: 1774240943, nanos: 441659887 } }))
-    Checking ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s
+   0.146632302s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: dependency on `build_script_build` is newer than we are 1774241152.013255766s > 1773734359.582199391s "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.183"
+   0.147221818s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: dependency on `build_script_build` is newer than we are 1774241151.988951036s > 1773734359.583199393s "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/kvm-ioctls-0.16.0"
+   0.147249656s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: dependency on `build_script_build` is newer than we are 1774241152.080209408s > 1773734359.583199393s "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-1.0.69"
+   0.147272490s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: dependency on `build_script_build` is newer than we are 1774241152.037204311s > 1773734359.585199395s "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106"
+   0.147316013s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: dependency on `build_script_build` is newer than we are 1774241152.057384339s > 1773734359.588199399s "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45"
+   0.147400866s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: fingerprint dirty for ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR)/Check { test: false }/TargetInner { name: "ZecroVizR", doc: true, ..: with_path("/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/main.rs", Edition2021) }
+   0.147409636s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "vm_memory" })
+   0.147823582s  INFO prepare_target{force=false package_id=kvm-bindings v0.7.0 target="kvm_bindings"}: cargo::core::compiler::fingerprint: fingerprint dirty for kvm-bindings v0.7.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("kvm_bindings", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/kvm-bindings-0.7.0/src/lib.rs", Edition2015) }
+   0.147833743s  INFO prepare_target{force=false package_id=kvm-bindings v0.7.0 target="kvm_bindings"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "vmm_sys_util" })
+   0.148196940s  INFO prepare_target{force=false package_id=vmm-sys-util v0.12.1 target="vmm_sys_util"}: cargo::core::compiler::fingerprint: fingerprint dirty for vmm-sys-util v0.12.1/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("vmm_sys_util", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/vmm-sys-util-0.12.1/src/lib.rs", Edition2021) }
+   0.148202353s  INFO prepare_target{force=false package_id=vmm-sys-util v0.12.1 target="vmm_sys_util"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "libc" })
+   0.148339379s  INFO prepare_target{force=false package_id=libc v0.2.183 target="libc"}: cargo::core::compiler::fingerprint: fingerprint dirty for libc v0.2.183/Check { test: false }/TargetInner { ..: lib_target("libc", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.183/src/lib.rs", Edition2021) }
+   0.148344040s  INFO prepare_target{force=false package_id=libc v0.2.183 target="libc"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "build_script_build" })
+   0.148620453s  INFO prepare_target{force=false package_id=libc v0.2.183 target="build-script-build"}: cargo::core::compiler::fingerprint: fingerprint dirty for libc v0.2.183/RunCustomBuild/TargetInner { ..: custom_build_target("build-script-build", "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.183/build.rs", Edition2021) }
+   0.148625801s  INFO prepare_target{force=false package_id=libc v0.2.183 target="build-script-build"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDependency { name: "build_script_build", dep_mtime: FileTime { seconds: 1774241152, nanos: 13255766 }, max_mtime: FileTime { seconds: 1773734359, nanos: 582199391 } })
+   0.148841940s  INFO prepare_target{force=false package_id=kvm-ioctls v0.16.0 target="kvm_ioctls"}: cargo::core::compiler::fingerprint: fingerprint dirty for kvm-ioctls v0.16.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("kvm_ioctls", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/kvm-ioctls-0.16.0/src/lib.rs", Edition2021) }
+   0.148846661s  INFO prepare_target{force=false package_id=kvm-ioctls v0.16.0 target="kvm_ioctls"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "build_script_build" })
+   0.149056704s  INFO prepare_target{force=false package_id=kvm-ioctls v0.16.0 target="build-script-build"}: cargo::core::compiler::fingerprint: fingerprint dirty for kvm-ioctls v0.16.0/RunCustomBuild/TargetInner { ..: custom_build_target("build-script-build", "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/kvm-ioctls-0.16.0/build.rs", Edition2021) }
+   0.149061071s  INFO prepare_target{force=false package_id=kvm-ioctls v0.16.0 target="build-script-build"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDependency { name: "build_script_build", dep_mtime: FileTime { seconds: 1774241151, nanos: 988951036 }, max_mtime: FileTime { seconds: 1773734359, nanos: 583199393 } })
+   0.149174884s  INFO prepare_target{force=false package_id=vm-memory v0.14.1 target="vm_memory"}: cargo::core::compiler::fingerprint: fingerprint dirty for vm-memory v0.14.1/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("vm_memory", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/vm-memory-0.14.1/src/lib.rs", Edition2021) }
+   0.149179225s  INFO prepare_target{force=false package_id=vm-memory v0.14.1 target="vm_memory"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "thiserror" })
+   0.149323614s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="thiserror"}: cargo::core::compiler::fingerprint: fingerprint dirty for thiserror v1.0.69/Check { test: false }/TargetInner { ..: lib_target("thiserror", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-1.0.69/src/lib.rs", Edition2021) }
+   0.149331860s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="thiserror"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "build_script_build" })
+   0.149489224s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="build-script-build"}: cargo::core::compiler::fingerprint: fingerprint dirty for thiserror v1.0.69/RunCustomBuild/TargetInner { ..: custom_build_target("build-script-build", "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-1.0.69/build.rs", Edition2021) }
+   0.149494411s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="build-script-build"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDependency { name: "build_script_build", dep_mtime: FileTime { seconds: 1774241152, nanos: 80209408 }, max_mtime: FileTime { seconds: 1773734359, nanos: 583199393 } })
+   0.149714379s  INFO prepare_target{force=false package_id=thiserror-impl v1.0.69 target="thiserror_impl"}: cargo::core::compiler::fingerprint: fingerprint dirty for thiserror-impl v1.0.69/Build/TargetInner { for_host: true, proc_macro: true, ..: lib_target("thiserror_impl", ["proc-macro"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-impl-1.0.69/src/lib.rs", Edition2021) }
+   0.149719932s  INFO prepare_target{force=false package_id=thiserror-impl v1.0.69 target="thiserror_impl"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "proc_macro2" })
+   0.149859960s  INFO prepare_target{force=false package_id=proc-macro2 v1.0.106 target="proc_macro2"}: cargo::core::compiler::fingerprint: fingerprint dirty for proc-macro2 v1.0.106/Build/TargetInner { ..: lib_target("proc_macro2", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/src/lib.rs", Edition2021) }
+   0.149864122s  INFO prepare_target{force=false package_id=proc-macro2 v1.0.106 target="proc_macro2"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "build_script_build" })
+   0.150018044s  INFO prepare_target{force=false package_id=proc-macro2 v1.0.106 target="build-script-build"}: cargo::core::compiler::fingerprint: fingerprint dirty for proc-macro2 v1.0.106/RunCustomBuild/TargetInner { ..: custom_build_target("build-script-build", "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs", Edition2021) }
+   0.150022265s  INFO prepare_target{force=false package_id=proc-macro2 v1.0.106 target="build-script-build"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDependency { name: "build_script_build", dep_mtime: FileTime { seconds: 1774241152, nanos: 37204311 }, max_mtime: FileTime { seconds: 1773734359, nanos: 585199395 } })
+   0.150142325s  INFO prepare_target{force=false package_id=quote v1.0.45 target="quote"}: cargo::core::compiler::fingerprint: fingerprint dirty for quote v1.0.45/Build/TargetInner { ..: lib_target("quote", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/lib.rs", Edition2021) }
+   0.150146394s  INFO prepare_target{force=false package_id=quote v1.0.45 target="quote"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "proc_macro2" })
+   0.150288678s  INFO prepare_target{force=false package_id=quote v1.0.45 target="build-script-build"}: cargo::core::compiler::fingerprint: fingerprint dirty for quote v1.0.45/RunCustomBuild/TargetInner { ..: custom_build_target("build-script-build", "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/build.rs", Edition2021) }
+   0.150292827s  INFO prepare_target{force=false package_id=quote v1.0.45 target="build-script-build"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDependency { name: "build_script_build", dep_mtime: FileTime { seconds: 1774241152, nanos: 57384339 }, max_mtime: FileTime { seconds: 1773734359, nanos: 588199399 } })
+   0.150411742s  INFO prepare_target{force=false package_id=syn v2.0.117 target="syn"}: cargo::core::compiler::fingerprint: fingerprint dirty for syn v2.0.117/Build/TargetInner { ..: lib_target("syn", ["lib"], "/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/syn-2.0.117/src/lib.rs", Edition2021) }
+   0.150415766s  INFO prepare_target{force=false package_id=syn v2.0.117 target="syn"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "proc_macro2" })
+   0.150514021s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint: fingerprint dirty for ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR)/Check { test: true }/TargetInner { name: "ZecroVizR", doc: true, ..: with_path("/home/IhitplayzYT/ZecroVizR/ZecroVizR/src/main.rs", Edition2021) }
+   0.150518897s  INFO prepare_target{force=false package_id=ZecroVizR v0.1.0 (/home/IhitplayzYT/ZecroVizR/ZecroVizR) target="ZecroVizR"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "vm_memory" })
+   Compiling proc-macro2 v1.0.106
+   Compiling libc v0.2.183
+   Compiling quote v1.0.45
+   Compiling thiserror v1.0.69
+   Compiling kvm-ioctls v0.16.0
+error: failed to run custom build command for `proc-macro2 v1.0.106`
+note: To improve backtraces for build dependencies, set the CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG=true environment variable to enable debug information generation.
+
+Caused by:
+  could not execute process `/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/proc-macro2-933a7653a75f6ab8/build-script-build` (never executed)
+
+Caused by:
+  Permission denied (os error 13)
+warning: build failed, waiting for other jobs to finish...
+error: failed to run custom build command for `libc v0.2.183`
+note: To improve backtraces for build dependencies, set the CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG=true environment variable to enable debug information generation.
+
+Caused by:
+  could not execute process `/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/libc-f825cedb2727b842/build-script-build` (never executed)
+
+Caused by:
+  Permission denied (os error 13)
+error: failed to run custom build command for `thiserror v1.0.69`
+note: To improve backtraces for build dependencies, set the CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG=true environment variable to enable debug information generation.
+
+Caused by:
+  could not execute process `/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/thiserror-01289695c6f27cd2/build-script-build` (never executed)
+
+Caused by:
+  Permission denied (os error 13)
+error: failed to run custom build command for `kvm-ioctls v0.16.0`
+note: To improve backtraces for build dependencies, set the CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG=true environment variable to enable debug information generation.
+
+Caused by:
+  could not execute process `/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/kvm-ioctls-bd412f43476b74d6/build-script-build` (never executed)
+
+Caused by:
+  Permission denied (os error 13)
+error: failed to run custom build command for `quote v1.0.45`
+note: To improve backtraces for build dependencies, set the CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG=true environment variable to enable debug information generation.
+
+Caused by:
+  could not execute process `/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/quote-1235519c699b16de/build-script-build` (never executed)
+
+Caused by:
+  Permission denied (os error 13)
