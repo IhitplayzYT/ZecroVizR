@@ -361,6 +361,29 @@ pub mod kvm {
 
     }
 
+    /// Trait: Device
+    /// 
+    /// # Traits 
+    ///    -- Sync
+    ///    -- Send
+    /// 
+    /// # Methods provided :
+    ///  -- fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool> : Programmed IO read
+    ///  -- fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool> : Programmed IO write
+    ///  -- fn mmio_read(&self,addr:u64,data: &mut [u8]) -> r_IO<bool> : Memory Mapped IO read
+    ///  -- fn mmio_write(&self,addr:u64,data: &[u8]) -> r_IO<bool> : Memory Mapped IO write
+    ///  -- fn pio_range(&self) -> Option<(u16,u16)> : PIO port range
+    ///  -- fn mmio_range(&self) -> Option<(u64,u64)> : Addr range
+    /// 
+    /// # Usage
+    /// ```
+    /// impl Device for Dbus{
+    /// ...
+    /// }
+    /// 
+    /// ``` 
+    ///
+
     pub trait Device: Send + Sync{
         fn pio_read(&self,port:u16,data: &mut [u8]) -> r_IO<bool>;
         fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool>;
@@ -369,6 +392,23 @@ pub mod kvm {
         fn pio_range(&self) -> Option<(u16,u16)> ;
         fn mmio_range(&self) -> Option<(u64,u64)> ;
     }
+
+
+    /// Wrapper VM struct and related data
+    /// # Struct Members
+    ///  -- kvm: Kvm -> The kvm struct
+    ///  -- vm_fd: VmFd -> The fd associated with the KVM
+    ///  -- guest_mem:*mut u8 -> The base addr of guest addr space
+    ///  -- exec_mode:ExecMode -> The execution mode of the VM
+    ///  -- device:Arc<DeviceBus> -> The dbus
+    ///  -- vcpu_cnt: u64 -> The count of VCPU threads
+    /// 
+    /// # Usage
+    /// ```
+    ///Vmm{kvm: Kvm,vm_fd: VmFd,guest_mem:*mut u8,exec_mode:ExecMode,device:Arc<DeviceBus>,vcpu_cnt: u64};
+    /// 
+    /// ```
+    /// 
 
     pub struct Vmm{
         kvm: Kvm,
@@ -379,6 +419,8 @@ pub mod kvm {
         vcpu_cnt: u64,
     }
 
+
+    // *** Required block for DeviceBus trait dependency
     unsafe impl Send for Vmm{}
     unsafe impl Sync for Vmm{}
 
@@ -417,12 +459,9 @@ pub mod kvm {
             })?;
         }
 
-        //  OPTIONAL TEST PART 
         if setup.dbg {
             test_code(guest_memory as *mut u8);
         }
-        //  OPTIONAL TEST PART
-
 
         Vm_fd.create_irq_chip().map_err(|op| {
             e_KVM::Custom(DBG_STR(&format!(
@@ -472,7 +511,7 @@ pub mod kvm {
 
         for (id,h) in handles.into_iter().enumerate() {
             if let Err(e) = h.join() {
-                return Err(e_KVM::Custom(DBG_STR(&format!("A thread panicked for the vCPU with Id:{}",id))));
+                return Err(e_KVM::Custom(DBG_STR(&format!("A thread panicked for the vCPU with Id:{}\nReason:{:?}",id,e))));
             }
 
         }
@@ -484,6 +523,19 @@ pub mod kvm {
 
     // ****************************************  INNER FUNCTIONS  ****************************************
 
+    /// Validate the Vcpu_setup struct
+    /// 
+    /// # Arguments
+    ///  -- setup : vcpu_setup -> The vcpu struct that needs to be validated
+    /// 
+    /// # Return
+    ///    -- r_VCPU<vcpu_setup> : A VCPU result containinng the validated vcpu_setup struct
+    ///        ## Success : 
+    ///            Ok(vcpu_setup)
+    ///        ## Failure :
+    ///            e_VCPU -> A wrapper enum containing the error
+    /// 
+    
     fn validate_vcpu_config(setup:vcpu_setup) -> r_VCPU<vcpu_setup>{
         let max_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1) as u64;
         if (setup.smp && (setup.cnt > 1 && setup.cnt < max_threads)) && (!setup.smp && (setup.cnt > 0 && setup.cnt < max_threads)){
@@ -493,8 +545,15 @@ pub mod kvm {
         }
     }
 
+    /// Evaluates the execution mode based on the Vcpu_setup struct
+    /// 
+    /// # Arguments
+    ///  -- setup : vcpu_setup -> The vcpu struct that corresponds to the kvm
+    /// # Return
+    ///    -- ExecMode : Returns the execmode enum containing the mode of execution derived from the vcpu_setup struct
+
     fn exec_mode_eval(setup:vcpu_setup) -> ExecMode{
-        match (setup.cnt,setup.smp) {
+      match (setup.cnt,setup.smp) {
              (1,_) => ExecMode::SingleThreaded,
              (_,false) => ExecMode::MultiThreaded,
              (_,true) => ExecMode::Smp
