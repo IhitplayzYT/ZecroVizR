@@ -1,5 +1,5 @@
-/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/proc-macro2-59fb65d883d68442/build_script_build-59fb65d883d68442.d: /home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs
+/home/ihitplayzyt/ZecroVizR/target/debug/build/proc-macro2-59fb65d883d68442/build_script_build-59fb65d883d68442.d: /home/ihitplayzyt/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs
 
-/home/IhitplayzYT/ZecroVizR/ZecroVizR/target/debug/build/proc-macro2-59fb65d883d68442/build_script_build-59fb65d883d68442: /home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs
+/home/ihitplayzyt/ZecroVizR/target/debug/build/proc-macro2-59fb65d883d68442/build_script_build-59fb65d883d68442: /home/ihitplayzyt/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs
 
-/home/IhitplayzYT/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs:
+/home/ihitplayzyt/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/proc-macro2-1.0.106/build.rs:
