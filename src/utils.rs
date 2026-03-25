@@ -8,12 +8,11 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY.
  */
-pub mod utils {
-#[allow(non_camel_case_types,non_upper_case_globals,non_snake_case)]
-    use core::panic;
-    #[allow(non_camel_case_types,non_snake_case,non_upper_case_globals)]
 
-    #[allow(non_snake_case, non_camel_case_types)]
+pub mod utils {
+    #[allow(non_camel_case_types,non_snake_case,non_upper_case_globals)]
+    use core::panic;
+
     pub fn DBG_STR(inject: &str) -> String {
         format!(
             "****** DEBUG ******\nFile: {}\nLine: {}\nCol: {}\n{}*******************\n",
@@ -41,56 +40,56 @@ pub mod utils {
     }
 
 
-pub fn parse_args() -> Zecro_conf{
-  let mut ret = Zecro_conf::new();
-  let args:Vec<String> = std::env::args().collect();
-  let limit = std::thread::available_parallelism().unwrap().get();
-  let l = args.len();
-  let mut i = 0;
-  while i < l{
-    match args[i].as_str() {
-      "-h" => {
-        println!("{:?}\n",USAGE_STR);
-        std::process::exit(0);
-      },
-      "-c" | "--vcpus" => {
-        if i+1 < l{
-        i += 1;
-        let t:usize = args[i].parse().expect("Invalid value passed to the [-c|--vcpus] argument\nExpected: Positive Integer");
-        ret.vcpu_cnt = t.clamp(1, limit);
-        }else{
-          panic!("No args passed for the [-c|--vcpus] flag");
-        }
-      },
-      "--dirty-log" => ret.dirty_log = true,
-      "--smp" => ret.is_smp = true,
-      "-a" | "--cmdline" => {
-      while i < l{
-        match &args[i][..]{
-          "-c" | "--vcpus" | "--dirty-log" | "--smp" | "-a" | "--cmdline" => {
-            break;   
-          },
-          "-h" => {
+  pub fn parse_args() -> Zecro_conf{
+    let mut ret = Zecro_conf::new();
+    let args:Vec<String> = std::env::args().collect();
+    let limit = std::thread::available_parallelism().unwrap().get();
+    let l = args.len();
+    let mut i = 0;
+    while i < l{
+      match args[i].as_str() {
+        "-h" => {
           println!("{:?}\n",USAGE_STR);
-          std::process::exit(0);           
+          std::process::exit(0);
+        },
+        "-c" | "--vcpus" => {
+          if i+1 < l{
+          i += 1;
+          let t:usize = args[i].parse().expect("Invalid value passed to the [-c|--vcpus] argument\nExpected: Positive Integer");
+          ret.vcpu_cnt = t.clamp(1, limit);
+          }else{
+            panic!("No args passed for the [-c|--vcpus] flag");
           }
-          _ => {},
+        },
+        "--dirty-log" => ret.dirty_log = true,
+        "--smp" => ret.is_smp = true,
+        "-a" | "--cmdline" => {
+        while i < l{
+          match &args[i][..]{
+            "-c" | "--vcpus" | "--dirty-log" | "--smp" | "-a" | "--cmdline" => {
+              break;   
+            },
+            "-h" => {
+            println!("{:?}\n",USAGE_STR);
+            std::process::exit(0);           
+            }
+            _ => {},
+          }
+          ret.kargs.push(args[i].clone());
+          i += 1;
         }
-        ret.kargs.push(args[i].clone());
-        i += 1;
+        if i == l-1{
+          break;
+        }        
+        },
+        _ => {
+          panic!("Unknown argument provided");
+        },
       }
-      if i == l-1{
-        break;
-      }        
-      },
-      _ => {
-        panic!("Unknown argument provided");
-      },
+      i += 1;
     }
-    i += 1;
+    ret
   }
-  ret
-}
 
 
 const USAGE_STR: &str = "\n

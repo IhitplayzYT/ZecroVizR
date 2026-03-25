@@ -13,6 +13,7 @@
 pub mod arch {
 
 #[allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
+
     ///
     ///   x86 based systems test code
     ///

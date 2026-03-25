@@ -497,6 +497,7 @@ pub mod kvm {
             }else{
                 panic!("A vcpu wasn't able to be started")
             }
+
             if let Ok(true) = bind_cpu_id(&fd, id, &Vkvm){
             }else{
                 panic!("A vcpu wasn't binded to its cpu_id")
@@ -551,6 +552,7 @@ pub mod kvm {
     ///  -- setup : vcpu_setup -> The vcpu struct that corresponds to the kvm
     /// # Return
     ///    -- ExecMode : Returns the execmode enum containing the mode of execution derived from the vcpu_setup struct
+    /// 
 
     fn exec_mode_eval(setup:vcpu_setup) -> ExecMode{
       match (setup.cnt,setup.smp) {
@@ -560,6 +562,16 @@ pub mod kvm {
         }
     }
 
+    /// Opens the chareacter device file /dev/kvm for communication with the host operating system
+    /// 
+    /// # Return
+    ///    -- r_KVM<Kvm> : A KVM result containinng the opened Kvm
+    ///        ## Success : 
+    ///            Ok(Kvm)
+    ///        ## Failure :
+    ///            e_KVM -> A wrapper enum containing the error
+    /// 
+    
     fn open_dev_kvm() -> r_KVM<Kvm> {
         let kvm = Kvm::new().unwrap_or_else(|e| {
             eprintln!("{}", DBG_STR(&format!("{:?}", e)[..]));
@@ -571,6 +583,21 @@ pub mod kvm {
         assert!(kvm.check_extension(Cap::Irqchip));
         Ok(kvm)
     }
+
+    /// Binds the vcpu to a cpuid specified for the kvm
+    /// 
+    /// # Argument
+    ///  vcpu:&Vcpu Fd -> The fd of the vcpu who we assigning the cpuid to
+    ///  vcpuid:u64 -> The cpuid we try to bind the vcpu to
+    ///  kvm:&Kvm -> The kvm for which cpu we try this bind
+    /// 
+    /// # Return
+    ///    -- r_KVM<bool> : A KVM result containing the success status
+    ///        ## Success : 
+    ///            Ok(true)
+    ///        ## Failure :
+    ///            e_KVM -> A wrapper enum containing the error
+    /// 
 
     fn bind_cpu_id(vcpu:&VcpuFd,vcpuid:u64,kvm:&Kvm) -> r_KVM<bool> {
         let mut allocated_cpuid = kvm.get_supported_cpuid(KVM_MAX_CPUID_ENTRIES).map_err(|op| {
@@ -600,7 +627,20 @@ pub mod kvm {
         Ok(true)
     }
 
-
+    /// Inits the registers and memspace flags for the vcpu 
+    /// 
+    /// # Argument
+    ///  vcpu:&Vcpu Fd -> The fd of the vcpu who we assigning the cpuid to
+    ///  bsp: bool -> Some special regs need to be set for the first cpu thread  
+    /// 
+    /// # Return
+    ///    -- r_KVM<bool> : A KVM result containing the success status
+    ///        ## Success : 
+    ///            Ok(true)
+    ///        ## Failure :
+    ///            e_KVM -> A wrapper enum containing the error
+    /// 
+    
     fn init_registers(vcpu:&VcpuFd,bsp: bool) -> r_KVM<bool> {
         let mut spec_regs = vcpu.get_sregs().map_err(|op| {
            e_KVM::Custom(format!("{:?}",e_VCPU::CorruptedVCPU(DBG_STR(&format!("Unable to retrieve vCpu Spec_Registers\nTarget VcpuFd:{:?}\nReason:[ {:?} ]",vcpu,op)))))
@@ -639,6 +679,19 @@ pub mod kvm {
         Ok(true)
     }
 
+    /// Inits the vcpu to be used 
+    /// 
+    /// # Argument
+    ///   Vm_fd:Vmfd -> The fd of the of the Vm for whom we are trying to create the vcpu
+    ///   id:u64 -> The id we trying to create the vcpu with[NOTE: This ID is only for usage in the following namespace it is not the actual id allocated by the hardware]
+    /// # Return
+    ///    -- r_KVM<VcpuFD> : A KVM result containing the fd of the created Vcpu
+    ///        ## Success :  
+    ///            Ok(VcpuFD)
+    ///        ## Failure :
+    ///            e_KVM -> A wrapper enum containing the error
+    /// 
+
     fn create_vcpu(Vm_fd: VmFd,id: u64) -> r_KVM<VcpuFd>{
         let v_cpu0_fd = Vm_fd.create_vcpu(id).map_err(|op| {
             e_KVM::Custom(DBG_STR(&format!(
@@ -650,6 +703,12 @@ pub mod kvm {
         Ok(v_cpu0_fd)
     }
 
+    /// Responsible for loading the cpu specific code into the memory addr
+    /// 
+    /// # Argument
+    ///    mmaped_addr:*mut u8 -> A pointer to where the code has to be written into
+    ///  
+
     fn test_code(mmaped_addr: *mut u8) {
         unsafe {
             let mut slice_view = slice::from_raw_parts_mut(mmaped_addr, mem_size as usize);
@@ -657,8 +716,15 @@ pub mod kvm {
         };
     }
 
-
-
+    /// Inits the memory for the guest memspace
+    /// 
+    /// # Return
+    ///    -- r_KVM<*mut u8> : A KVM result containing the address of the start of the guestmem allocated
+    ///        ## Success :  
+    ///           Ok(*mut u8)
+    ///        ## Failure :
+    ///            e_KVM -> A wrapper enum containing the error
+    /// 
 
     fn init_guest_mem() -> r_KVM<*mut u8> {
         let ret: *mut u8 = unsafe {
@@ -677,6 +743,19 @@ pub mod kvm {
         assert_ne!(ret, libc::MAP_FAILED as *mut u8);
         Ok(ret)
     }
+
+    /// Formats and marks the mmaped addr into the userspace
+    /// 
+    /// # Argument
+    ///   mmaped_addr:*mut u8 -> The addr of the allocated memory
+    /// 
+    /// # Return
+    ///    -- r_KVM<kvm_userspace_memory_region> : A KVM result containing the kvm_userspace_memroy_region struct
+    ///        ## Success :  
+    ///            Ok(kvm_userspace_memory_region)
+    ///        ## Failure :
+    ///            e_KVM -> A wrapper enum containing the error
+    /// 
 
     fn init_userspace(mmaped_addr: *mut u8) -> r_KVM<kvm_userspace_memory_region> {
         Ok(kvm_userspace_memory_region {
