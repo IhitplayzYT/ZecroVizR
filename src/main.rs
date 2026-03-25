@@ -17,13 +17,13 @@
 )]
 mod ZecroVM;
 mod io;
-mod kvm;
+mod KVM;
 mod utils;
 #[allow(unused_imports, dead_code, non_camel_case_types, non_snake_case)]
 use std::env;
 fn main() {
     let flags = crate::utils::utils::parse_args();
-
+    
 
     println!("Hello, world!");
 }

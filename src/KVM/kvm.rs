@@ -14,14 +14,14 @@ pub mod kvm {
 
     #![allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
     // ****************************************  IMPORTS  ****************************************
-    use crate::kvm::arch::{self, arch::asm_test_code};
-    use crate::kvm::vcpu::vcpu::{ExecMode, Vcpu_wrapper, e_VCPU, r_VCPU, vcpu_setup,spawn_vcpu_threads};
+    use crate::KVM::arch::{self, arch::asm_test_code};
+    use crate::KVM::vcpu::vcpu::{ExecMode, Vcpu_wrapper, e_VCPU, r_VCPU, vcpu_setup,spawn_vcpu_threads};
 
     use kvm_bindings::{KVM_MAX_CPUID_ENTRIES, KVM_MEM_LOG_DIRTY_PAGES, kvm_pit_config, kvm_regs, kvm_userspace_memory_region};
     use kvm_ioctls::{Cap, DeviceFd, Kvm, VcpuFd, VmFd};
     use libc::KERNEL_VERSION;
 
-    use crate::kvm::kvm_err::*;
+    use crate::KVM::kvm_err::*;
     use crate::utils::utils::DBG_STR;
     use crate::io::IO::{r_IO,e_IO};
     use crate::*;
@@ -51,6 +51,8 @@ pub mod kvm {
 
     /// Where initrd is loaded
     pub const INITRD_ADDR: u64      = 0x08000000; // Placed at 128Mb
+
+    pub static mut DBG_FLAG: bool = false;
     // ****************************************  GLOBAL CONSTANTS  ****************************************
 
 
@@ -76,7 +78,8 @@ pub mod kvm {
     /// ``` 
     /// 
     pub struct DeviceBus{
-        mode: ExecMode, // To be used by the methods of the Device Bus
+        // I kept only mode as public to ensure Dbus barrier and shutdown aren't unauthorisiably alterred
+        pub mode: ExecMode, // To be used by the methods of the Device Bus
         device: RwLock<Vec<Arc<dyn Device+Send+Sync>>>, // ReadWrite locked vector of devices interface behind a concurrent smart pointer
         barrier:Option<Arc<Barrier>>, // Used for smp to ensure every worker is at same point
         collapse: Mutex<bool>, // To shutdown all threads as a fail safe
@@ -350,14 +353,33 @@ pub mod kvm {
         ///
 
         pub fn try_shutdown(&self) -> r_IO<bool>{
-            self.collapse.try_lock().map_err(|op| {
+            *self.collapse.try_lock().map_err(|op| {
                 e_IO::ShutdownNotReady(
                     DBG_STR(&format!("Can't get shutdown lock!\nReason: [{:?}]\n",op))
                 )
-            }).unwrap_err();
+            }).unwrap() = true;
             Ok(true)
         }
 
+        /// DeviceBus Functions
+        ///
+        /// Used my Vcpus to check if a shutdown is initiated
+        ///
+        /// # Return
+        ///    -- bool: Boolean of whether a shutdown is initiated
+        ///        
+        /// # Usage
+        /// ```
+        /// if !dbus.is_shutdown_requested(){
+        ///     ...
+        /// }
+        /// 
+        /// ``` 
+        ///
+        
+        pub fn is_shutdown_requested(&self) -> bool{
+            *self.collapse.lock().expect("Lock is poisoned")
+        }
 
     }
 
@@ -389,8 +411,8 @@ pub mod kvm {
         fn pio_write(&self,port:u16,data: &[u8]) -> r_IO<bool>;
         fn mmio_read(&self,addr:u64,data: &mut [u8]) -> r_IO<bool>;
         fn mmio_write(&self,addr:u64,data: &[u8]) -> r_IO<bool>;
-        fn pio_range(&self) -> Option<(u16,u16)> ;
-        fn mmio_range(&self) -> Option<(u64,u64)> ;
+        fn pio_range(&self) -> Option<(u16,u16)> {None}
+        fn mmio_range(&self) -> Option<(u64,u64)> {None}
     }
 
 
@@ -436,6 +458,8 @@ pub mod kvm {
                 op
             )))))
         })?;
+
+        unsafe{DBG_FLAG = setup.dbg;}
         
         let mode = exec_mode_eval(setup); // An enum for if let matching 
 

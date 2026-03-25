@@ -11,10 +11,10 @@
 pub mod vcpu{
 #![allow(non_camel_case_types, non_snake_case, unused_imports,non_upper_case_globals,dead_code)]
 
-    use kvm_ioctls::VcpuFd;
+    use kvm_ioctls::{VcpuExit, VcpuFd};
     use std::{fmt::Display, sync::Arc, thread::{self, JoinHandle}};
 
-    use crate::kvm::kvm::kvm::DeviceBus;
+    use crate::KVM::kvm::kvm::{DBG_FLAG, DeviceBus};
 
 
     /// Vcpu Wrapper struct
@@ -214,8 +214,101 @@ pub mod vcpu{
     ///    
 
     pub fn exec_vcpu(vcpu: VcpuFd,id: u64,Dbus: Arc<DeviceBus>) {
-    // TODO: Finish this fxn 
-    // FIXME:
+        Dbus.smp_init();
+        loop {
+            if Dbus.is_shutdown_requested() {
+                eprintln!("Exiting process with vCPU:{id} due to SHUTDOWN initaiated");
+                break;
+            }
+            match vcpu.run() {
+                Ok(exit) => {
+                    match exit{
+                        VcpuExit::Shutdown => {
+                            eprintln!("vCPU:{id} Initiating global shutdown");
+                            if !Dbus.try_shutdown().unwrap_or_else(|err| {eprintln!("Error occured while trying to shutdown{:?}",err);false}){
+                              panic!("EXIT:In Fatal state "); 
+                            }
+                            break;
+                        },
+                        VcpuExit::MmioRead(addr,data ) => {
+                            if let Err(err) = Dbus.mmio_read(addr, data){
+                                eprintln!("vCPU:{id}\nFailed to read from Address:{addr}\nReason:{err:?}");
+                                break; // Done to ensure that corrupted vcpu doesnt keep executing
+                            }
+                        },
+                        VcpuExit::MmioWrite(addr,data ) => {
+                            if let Err(err) = Dbus.mmio_write(addr, data){
+                                eprintln!("vCPU:{id}\nFailed to write to Address:{addr}\nReason:{err:?}");
+                                break; // Done to ensure that corrupted vcpu doesnt keep executing
+                            }
+                        },
+                        VcpuExit::IoIn(port,data ) => {
+                            if let Err(err) = Dbus.pio_read(port, data){
+                                eprintln!("vCPU:{id}\nFailed to read from Port:{port}\nReason:{err:?}");
+                                break; // Done to ensure that corrupted vcpu doesnt keep executing
+                            }
+                        },
+                        VcpuExit::IoOut(port,data ) => {
+                            if let Err(err) = Dbus.pio_write(port, data){
+                                eprintln!("vCPU:{id}\nFailed to write to Port:{port}\nReason:{err:?}");
+                                break; // Done to ensure that corrupted vcpu doesnt keep executing
+                            }
+                        },
+                        VcpuExit::Exception => {
+                            eprintln!("vCPU: {id}\nUnhandled kvm exception occured");
+                            if !Dbus.try_shutdown().unwrap_or_else(|err| {eprintln!("Error occured while trying to shutdown{:?}",err);false}){
+                              panic!("EXIT: Kvm exception occured"); 
+                            }
+                            break;
+                        },
+                        VcpuExit::Unknown => {
+                            eprintln!("vCPU: {id}\nUnknown reason for exit");
+                            if !Dbus.try_shutdown().unwrap_or_else(|err| {eprintln!("Error occured while trying to shutdown{:?}",err);false}){
+                              panic!("EXIT: Unknown reason for exit"); 
+                            }
+                            break;
+                        },
+
+                        VcpuExit::Hlt => {
+                            if Dbus.mode == ExecMode::SingleThreaded{
+                                if !Dbus.try_shutdown().unwrap_or_else(|err| {eprintln!("Error occured while trying to shutdown{:?}",err);false}){
+                                    panic!("EXIT:In Fatal state "); 
+                                }
+                                break;
+                            }
+                            std::thread::yield_now();
+
+                        },
+                        VcpuExit::Debug(dbg) => {
+                            if unsafe{DBG_FLAG == true} { eprintln!("Diagnositic:\nException Code:{}\nRIP reg position = {:#x}",dbg.exception,dbg.pc);}
+                        },
+                        VcpuExit::Unsupported(x) => {
+                          eprintln!("Some unsupported error occured that is not part of current dev release of KVM:{x}")  
+                        },
+                        other => {
+                            eprintln!("vCPU:{id}\nUnhandled exit {other:?}");
+                        }
+
+                    }
+
+                },
+                e => {
+                        eprintln!("vCPU:{id} Initiating global shutdown\nReason: {e:?}");
+                        if !Dbus.try_shutdown().unwrap_or_else(|err| {eprintln!("Error occured while trying to shutdown{:?}",err);false}){
+                            panic!("EXIT:In Fatal state "); 
+                        }
+                        break;
+                    }
+            }
+
+
+
+
+
+        }
+
+        println!("vCPU:{id} Finished assigned Job");
+
     }
 
 
